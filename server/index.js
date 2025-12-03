@@ -4,6 +4,7 @@ import morgan from "morgan";
 import authRoutes from './routes/authRoutes.js'
 import categoryRoutes from './routes/categoryRoutes.js'
 import productRoutes from './routes/productRoutes.js'
+import orderRoutes from './routes/orderRoutes.js'
 
 const app = express();
 const port = process.env.PORT
@@ -23,7 +24,7 @@ app.use(morgan("dev"))
 app.use("/api/auth",authRoutes) // http://localhost:5000/api/auth/login  || http://localhost:5000/api/auth/signup
 app.use("/api/category" , categoryRoutes)
 app.use("/api/product" , productRoutes)
-
+app.use("/api/order" ,orderRoutes)
 
 
 

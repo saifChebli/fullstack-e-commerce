@@ -7,9 +7,9 @@ const router = express.Router()
 
 
 router.get("/categories", getAllCategories)
-router.post("/add-category", access , authorize(["admin"]) , createCat)
-router.put("/update-category/:categoryId", access , authorize(["admin"]), updateCategory )
-router.delete("/delete-category/:categoryId", access , authorize(["admin"]), deleteCategory)
+router.post("/add-category", access , authorize("admin") , createCat)
+router.put("/update-category/:categoryId", access , authorize("admin"), updateCategory )
+router.delete("/delete-category/:categoryId", access , authorize("admin"), deleteCategory)
 
 
 
