@@ -26,6 +26,8 @@ export const login = async (req, res) => {
         const exisitingUser = await User.findOne({email}).select("+password")
         if(!exisitingUser) return res.status(400).json({message: "Bad credentials"})
 
+        if (exisitingUser.isBlocked) return res.status(403).json({message : "Account is blocked . Contact Admin"})
+
         const isMatch = await exisitingUser.matchPassword(password)
         if (!isMatch) return res.status(400).json({message : "Invalid credentials"})
 

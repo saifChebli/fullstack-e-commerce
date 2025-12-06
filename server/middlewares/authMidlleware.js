@@ -22,6 +22,8 @@ export const access = async (req, res, next) => {
     const existingUser = await User.findById(decoded.id)
     if(!existingUser) return res.status(401).json({message : "Not Authorised, user not found"})
 
+    if (req.user.isBlocked) return res.status(403).json({message : "Account blocked"})
+        
     next()
         
     } catch (error) {

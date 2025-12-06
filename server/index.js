@@ -5,6 +5,8 @@ import authRoutes from './routes/authRoutes.js'
 import categoryRoutes from './routes/categoryRoutes.js'
 import productRoutes from './routes/productRoutes.js'
 import orderRoutes from './routes/orderRoutes.js'
+import userRoutes from './routes/userRoutes.js'
+import paymentRoutes from './routes/paymentRoutes.js'
 
 const app = express();
 const port = process.env.PORT
@@ -25,8 +27,8 @@ app.use("/api/auth",authRoutes) // http://localhost:5000/api/auth/login  || http
 app.use("/api/category" , categoryRoutes)
 app.use("/api/product" , productRoutes)
 app.use("/api/order" ,orderRoutes)
-
-
+app.use("/api/user" , userRoutes)
+app.use("/api/payment" , paymentRoutes)
 
 app.get("/", (req, res)=>{
     res.send('Welcome to E-commerce API')

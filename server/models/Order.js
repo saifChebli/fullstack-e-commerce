@@ -7,9 +7,13 @@ const orderSchema = new mongoose.Schema({
     orderItems: [
         { 
            product :  { type: mongoose.Schema.Types.ObjectId, ref: "Product" } ,
-           quantity : { type : Number , default : 1 }
+           quantity : { type : Number , default : 1 },
+           price : { type : Number , required : true}
         }
-    ]  
+    ],
+    isPaid : { type : Boolean , default : false },
+    paidAt: Date,
+    paymentResult : { id : String , status : String , update_time : Date , email_address : String}
 },{
     timestamps : true
 })
