@@ -1,40 +1,102 @@
-import  User  from '../models/User.js'
-import { generateToken } from '../utils/generateToken.js'
+import User from "../models/User.js";
+import { generateToken, generateEmailToken } from "../utils/generateToken.js";
+import sendEmail from "../utils/sendEmail.js";
 
+export const signUp = async (req, res) => {
+  try {
+    const { name, email, password } = req.body;
 
+    const exisitingUser = await User.findOne({ email });
 
-export const signUp = async(req, res) => {
-    try{
-        const { name, email, password } = req.body;
+    if (exisitingUser)
+      return res.status(400).json({ message: "User already Exisit" });
+    // const hashedPassword = await bcrypt.hash(password , 10)
+    const emailToken = generateEmailToken({email});
+    const newUser = await User.create({
+      name,
+      email,
+      password,
+      emailToken,
+      verificationExpire: Date.now() + 60 * 60 * 1000,
+    });
 
-        const exisitingUser = await User.findOne({email})
+    const verifyUrl = `${process.env.FRONTEND_URL}/verify-email/${emailToken}`;
 
-        if(exisitingUser) return res.status(400).json({ message: "User already Exisit"})
-        // const hashedPassword = await bcrypt.hash(password , 10)
-        const newUser = await User.create({name, email, password})
-        res.status(201).json({ message: "User created successfully.", user: { id: newUser._id, email: newUser.email, name: newUser.name }})
-    }catch(error){
-        console.log(error)
-        res.status(500).json({message: "Internal server error"})
-    }
-}
+    await sendEmail({
+      to: newUser.email,
+      subject: "Verify your email",
+      html: `
+            <h1>Welcome ${newUser.name}</h1>
+            <p>Please verify your email by clicking on this link <a href='${verifyUrl}' >Verify Email</></p>
+        `,
+    });
+    res.status(201).json({
+      message: "User created successfully.",
+      user: { id: newUser._id, email: newUser.email, name: newUser.name },
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
 
 export const login = async (req, res) => {
-    const { email, password } = req.body;
+  const { email, password } = req.body;
 
-    try {
-        const exisitingUser = await User.findOne({email}).select("+password")
-        if(!exisitingUser) return res.status(400).json({message: "Bad credentials"})
+  try {
+    const exisitingUser = await User.findOne({ email }).select("+password");
+    if (!exisitingUser)
+      return res.status(400).json({ message: "Bad credentials" });
 
-        if (exisitingUser.isBlocked) return res.status(403).json({message : "Account is blocked . Contact Admin"})
+    if (exisitingUser.isBlocked)
+      return res
+        .status(403)
+        .json({ message: "Account is blocked . Contact Admin" });
 
-        const isMatch = await exisitingUser.matchPassword(password)
-        if (!isMatch) return res.status(400).json({message : "Invalid credentials"})
+    if (!exisitingUser.isVerified)
+      return res.status(401).json({ message: "Verify Email First" });
 
-        res.status(200).json({message: "Logged in successfully", user: {id: exisitingUser._id, name: exisitingUser.name, email: exisitingUser.email, role: exisitingUser.role}, token: generateToken({id : exisitingUser._id, role: exisitingUser.role})})
-    } catch (error) {
-        console.log(error)
-        res.status(500).json({ message: "Internal server error"})
-    }
-}
+    const isMatch = await exisitingUser.matchPassword(password);
+    if (!isMatch)
+      return res.status(400).json({ message: "Invalid credentials" });
 
+    res.status(200).json({
+      message: "Logged in successfully",
+      user: {
+        id: exisitingUser._id,
+        name: exisitingUser.name,
+        email: exisitingUser.email,
+        role: exisitingUser.role,
+      },
+      token: generateToken({
+        id: exisitingUser._id,
+        role: exisitingUser.role,
+      }),
+    });
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};
+
+export const verifyEmailToken = async (req, res) => {
+  const { emailToken } = req.params;
+  try {
+    const user = await User.findOne({
+      emailToken,
+      verificationExpire: { $gt: Date.now() },
+    });
+
+    if (!user) return res.status(400).json({ message: "invalid token" });
+
+    user.isVerified = true;
+    user.emailToken = undefined;
+    user.verificationExpire = undefined;
+
+    await user.save();
+    res.status(200).json({ message: "email verified successfully" });
+  } catch (err) {
+    console.log(err);
+    res.status(500).json({ message: "Internal server error" });
+  }
+};

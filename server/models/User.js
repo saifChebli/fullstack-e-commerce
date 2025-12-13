@@ -13,7 +13,10 @@ const userSchema = new mongoose.Schema(
     },
     password: { type: String, required: true, minlength: 6, select: false },
     role: { type: String, enum: ["user", "admin"], default: "user" },
-    isBlocked: { type : Boolean , default : false }
+    isBlocked: { type : Boolean , default : false },
+    isVerified: { type : Boolean, default : false },
+    emailToken: {  type: String },
+    verificationExpire: Date
   },
   { timestamps: true }
 );

@@ -28,7 +28,11 @@ app.use("/api/category" , categoryRoutes)
 app.use("/api/product" , productRoutes)
 app.use("/api/order" ,orderRoutes)
 app.use("/api/user" , userRoutes)
-app.use("/api/payment" , paymentRoutes)
+
+
+// Payment & Webhook Route
+app.use("/api" , paymentRoutes)
+
 
 app.get("/", (req, res)=>{
     res.send('Welcome to E-commerce API')
