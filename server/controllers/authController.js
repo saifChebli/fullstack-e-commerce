@@ -60,24 +60,57 @@ export const login = async (req, res) => {
     if (!isMatch)
       return res.status(400).json({ message: "Invalid credentials" });
 
+    // Set cookie
+    let jwtToken = generateToken({id: exisitingUser._id, role: exisitingUser.role})
+
+    res.cookie("token" , jwtToken , {
+      httpOnly : true, // Prevent XSS Attacks / Cookie cannot be accessed by javascript
+      secure : process.env.NODE_ENV === "production",  // secure : true => Cookie sent only over HTTPS / process.env.NODE_ENV === "production"
+      sameSite : "strict",
+      maxAge : 7 * 24 * 60 * 60 * 1000 // 7 days 
+    })
+
+
+
     res.status(200).json({
       message: "Logged in successfully",
+      success : true ,
       user: {
         id: exisitingUser._id,
         name: exisitingUser.name,
         email: exisitingUser.email,
         role: exisitingUser.role,
       },
-      token: generateToken({
-        id: exisitingUser._id,
-        role: exisitingUser.role,
-      }),
+      // token: generateToken({
+      //   id: exisitingUser._id,
+      //   role: exisitingUser.role,
+      // }),
     });
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
+
+export const logout = async (req,res) => {
+  try {
+    res.clearCookie("token" , {
+      httpOnly : true,
+      secure : process.env.NODE_ENV === "production",
+      sameSite : "strict"
+    })
+
+    res.status(200).json({message :"Logged out successfully"})
+  } catch (error) {
+    console.log(error);
+    res.status(500).json({ message: "Internal server error" });
+  }
+}
+
+
+
+
 
 export const verifyEmailToken = async (req, res) => {
   const { emailToken } = req.params;
@@ -100,3 +133,5 @@ export const verifyEmailToken = async (req, res) => {
     res.status(500).json({ message: "Internal server error" });
   }
 };
+
+

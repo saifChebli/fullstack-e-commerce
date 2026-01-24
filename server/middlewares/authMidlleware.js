@@ -37,3 +37,20 @@ export const access = async (req, res, next) => {
 
 
 }
+
+
+
+export const protect = async (req,res,next) => {
+
+    const token = req.cookies.token
+
+    if(!token){
+        return res.status(401).json({ message :  "Not authenticated" })
+    }
+
+    const decoded = jwt.verify(token , process.env.JWT_KEY)
+
+    // req.user = { id : decoded.id, role : decoded.role }
+    req.user = await User.findById(decoded.id).select("-password")
+    next()
+}

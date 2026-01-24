@@ -13,7 +13,7 @@ export const createCat = async (req, res) =>{
         if(existcategory) return res.status(400).json({message : "Category already exist"})
         
         const category = await Category.create({name})
-        res.status(201).json({message : "Category created successfully" , category})
+        res.status(201).json({success : true , message : "Category created successfully" , category})
         
     } catch (error) {
         console.log(error)
@@ -56,7 +56,7 @@ export const deleteCategory = async (req, res) =>{
 
     try {
         await Category.findByIdAndDelete(categoryId)
-        res.status(200).json({message : "Category deleted successfully"})
+        res.status(200).json({ success: true , message : "Category deleted successfully"})
     } catch (error) {
         console.log(error)
         res.status(500).json({message : "Internal Server error"})
