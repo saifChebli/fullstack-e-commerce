@@ -5,12 +5,17 @@ import Product from '../models/Product.js'
 // POST
 // parameters : name , description , price , stock , category , image
 export const createProduct = async (req , res) => {
-
-    const {name , description , price , stock , category , image} = req.body
-    // TO-DO add multer to upload images
-    if (!category || !name || !price) return res.status(400).json({message : "Category , Price and Name are required"})
     try {
-        const product = await Product.create({name , description , price , stock , category , image})
+
+        const image = req.files.map(
+            (file) => `/uploads/products/${file.filename}`
+        )
+
+        const product = await Product.create({
+            ...req.body,
+            image
+        })
+
         res.status(201).json({message : "Product created successfully" , product})
     } catch (error) {
         res.status(500).json({message : "Internal server error"})
