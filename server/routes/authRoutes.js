@@ -1,4 +1,4 @@
-import { signUp, login, verifyEmailToken, logout } from "../controllers/authController.js";
+import { signUp, login, verifyEmailToken, logout, googleAuth } from "../controllers/authController.js";
 import express from "express"
 import { protect } from "../middlewares/authMidlleware.js";
 
@@ -11,6 +11,7 @@ router.post('/signup', signUp)
 router.post('/login', login)
 router.post("/logout" , logout)
 router.get('/verify-email/:emailToken', verifyEmailToken)
+router.post('/google' , googleAuth)
 
 router.get("/me" , protect , (req,res) => {
     res.status(200).json({

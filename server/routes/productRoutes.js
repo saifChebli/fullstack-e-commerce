@@ -8,9 +8,9 @@ const router = express.Router()
 
 
 router.get("/all-products" , getAllProducts)
-router.get("/single-product/:productId" , getSingleProduct)
+router.get("/:productId" , getSingleProduct)
 router.post("/add-product" ,protect , authorize("admin") , upload.array("image" , 8),  createProduct)
-router.put("/update-product/:productId" ,protect , authorize("admin") , updateProduct)
+router.put("/update-product/:productId" ,protect , authorize("admin") , upload.array("image" , 8) , updateProduct)
 router.delete("/delete-product/:productId" ,protect , authorize("admin") ,  deleteProduct)
 
 

@@ -52,11 +52,49 @@ export const getSingleProduct = async (req , res) => {
 //PUT
 //parameter : productId , {name , price , description , stock , image , category}
 export const updateProduct = async (req , res) => {
-    const { productId } = req.params
-    const {name , price , description , stock , image , category} = req.body
+   
     try {
-        const product = await Product.findByIdAndUpdate(productId , {name , price , description , stock , image , category} , {new : true})
-        res.status(200).json(product)
+         const { productId } = req.params
+
+        const product = await Product.findById(productId)
+
+        if (!product) return res.status(404).json({message : "Not found"})
+
+        
+        // Old images sent from client side
+            let oldImages = []
+            if(req.body.oldImages){
+                oldImages = JSON.parse(req.body.oldImages)
+            }
+
+            console.log('Old :' , oldImages)
+
+            // New Images uploaded
+            let newImages = []
+
+            if(req.files && req.files.length > 0){
+                newImages = req.files.map(
+                    (file) => `/uploads/products/${file.filename}`
+                )
+            }   
+
+            console.log('New :' , newImages)
+
+
+            // Merge oldImages + newImages
+
+            const images = [...oldImages , ...newImages]
+
+            const updatedProduct = await Product.findByIdAndUpdate(
+                productId ,
+                {
+                    ...req.body,
+                    image : images
+                },
+                { new : true }
+            )
+
+        res.status(200).json(updatedProduct)
     } catch (error) {
         res.status(500).json({message : "Internal server error"})
     }

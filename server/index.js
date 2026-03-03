@@ -9,6 +9,7 @@ import orderRoutes from './routes/orderRoutes.js'
 import userRoutes from './routes/userRoutes.js'
 import paymentRoutes from './routes/paymentRoutes.js'
 import cors from 'cors'
+import path from 'path'
 
 const app = express();
 const port = process.env.PORT
@@ -19,7 +20,7 @@ connectDB()
 // Cors
 
 app.use(cors({
-    origin : process.env.FRONTEND_URL,
+    origin : [process.env.FRONTEND_URL , process.env.CLIENT_URL],
     credentials : true // Without this =>> cookies won't be sent 
 }))
 
@@ -35,6 +36,11 @@ app.use(morgan("dev"))
 // Cookies Parser
 
 app.use(cookieParser())
+
+// Serve uploaded images
+
+app.use("/uploads" , express.static(path.join(process.cwd() , "uploads")))
+
 
 // Define Routes
 app.use("/api/auth",authRoutes) // http://localhost:5000/api/auth/login  || http://localhost:5000/api/auth/signup

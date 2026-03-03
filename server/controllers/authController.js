@@ -109,9 +109,6 @@ export const logout = async (req,res) => {
 }
 
 
-
-
-
 export const verifyEmailToken = async (req, res) => {
   const { emailToken } = req.params;
   try {
@@ -135,3 +132,26 @@ export const verifyEmailToken = async (req, res) => {
 };
 
 
+export const googleAuth = async (req,res) => {
+  const {email , name} = req.body
+
+  let user = await User.findOne({email})
+
+  if(!user){
+    user = await User.create({
+      email,
+      name,
+      isVerified : true,
+      password : "google-auth"
+    })
+  }
+
+  const token = generateToken({id : user._id})
+
+  res.cookie('token' , token , {
+    httpOnly : true,
+    sameSite : 'strict'
+  })
+
+  res.json({user})
+}

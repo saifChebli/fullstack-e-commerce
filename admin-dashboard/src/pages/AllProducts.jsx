@@ -9,19 +9,39 @@ import {
   Form,
   Input,
   Select,
-  Upload
+  Upload,
+  Popconfirm,
+  Drawer
 } from "antd";
 import api from "../api/axios";
 import { Eye, Pencil, PlusCircle, Trash } from "lucide-react";
 import toast from 'react-hot-toast'
 
 const AllProducts = () => {
+
   const [products, setProducts] = useState([]);
   const [categories, setCategories] = useState([]);
-
+  
+  const [loading , setLoading] = useState(false)
   const [isOpen, setIsOpen] = useState(false);
 
   const [fileList , setFileList] = useState([])
+
+  const [isEdit , setIsEdit] = useState(false)
+  const [editingProduct , setEditingProduct] = useState(null)
+
+
+  const [viewProduct , setViewProduct] = useState(null)
+
+
+  const openDrawer = (product) => {
+    setViewProduct(product)
+  }
+
+
+
+  const [form] = Form.useForm()
+
 
   const getAllProducts = async () => {
     try {
@@ -59,6 +79,8 @@ const AllProducts = () => {
 
   const onFinish = async (values) => {
     try {
+
+      setLoading(true)
       const formData = new FormData()
 
       formData.append("name" , values.name)
@@ -66,29 +88,51 @@ const AllProducts = () => {
       formData.append("price" , values.price)
       formData.append("stock" , values.stock)
       formData.append("category" , values.category)
-
+      
+      // New images only (originFileObj exists for new uploads)
       fileList.forEach(file => {
-        formData.append("image" , file.originFileObj)
-      })
-
-      await api.post("/product/add-product" , formData , {
-        headers : {
-          "Content-Type" : "multipart/form-data"
+        if(file.originFileObj){
+          formData.append("image" , file.originFileObj)
         }
       })
+
+      if(isEdit){
+        // send old images array of URL's
+        const oldImages = fileList.filter(file => !file.originFileObj).map(file => file.url.replace(import.meta.env.VITE_BASE_URL , ""))
+
+        formData.append("oldImages" , JSON.stringify(oldImages))
+
+
+        await api.put(`/product/update-product/${editingProduct._id}`,
+                      formData ,
+                      { headers : { "Content-Type" : "multipart/form-data"}})
+        toast.success("Product updated successfully")              
+      }else {
+        await api.post("/product/add-product" , formData , {
+                headers : {
+                  "Content-Type" : "multipart/form-data"
+                }
+              })
       
-      toast.success("Product created successfully")
+        toast.success("Product created successfully")
+      }
+
+
       setIsOpen(false)
+      setIsEdit(false)
       setFileList([])
+      setEditingProduct(null)
+      form.resetFields()
       getAllProducts()
 
 
     } catch (error) {
-        toast.error("Error creating product")
+        toast.error("Operation failed")
         console.log(error)
+    } finally {
+      setLoading(false)
     }
   }
-
 
   const uploadProps = {
     multiple : true,
@@ -99,7 +143,46 @@ const AllProducts = () => {
     onChange : ({fileList}) => setFileList(fileList)
   }
 
-  console.log(fileList)
+
+  // Delete Product 
+
+  const deleteProduct = async (id) => {
+    try {
+      await api.delete(`/product/delete-product/${id}`)
+      toast.success("Product deleted successfully")
+      getAllProducts()
+    } catch (error) {
+      toast.error("Failed to delete product")
+    }
+  }
+ 
+
+  // Edit Product
+
+  const openEditModal = (product) => {
+    setIsEdit(true)
+    setEditingProduct(product)
+    setIsOpen(true)
+
+    form.setFieldsValue({
+      name : product.name,
+      description : product.description,
+      price : product.price,
+      category : product.category._id,
+      stock : product.stock
+    })
+    console.log(product.image)
+    setFileList(
+      product.image.map((img , indx) => ({
+        uid : indx,
+        name :`image-${indx}`,
+        status : "done",
+        url : `${import.meta.env.VITE_BASE_URL}${img}`
+      }))
+    )
+  }
+  
+  
   
   return (
     <>
@@ -120,7 +203,7 @@ const AllProducts = () => {
                   <img
                     draggable={false}
                     alt={product.name}
-                    src={product.image[0]}
+                    src={`${import.meta.env.VITE_BASE_URL}${product.image[0]}`}
                   />
                 }
               >
@@ -135,15 +218,18 @@ const AllProducts = () => {
                 <Divider />
 
                 <div className="my-3 flex items-center justify-between">
-                  <Button>
-                    <Eye key="eye" className="text-gray-700" size={18} />
-                  </Button>
-                  <Button>
-                    <Pencil key="pencil" className="text-gray-700" size={18} />
-                  </Button>
-                  <Button danger>
-                    <Trash key="trash" className="text-red-700" size={18} />
-                  </Button>
+                  <Button onClick={() => openDrawer(product)} icon={<Eye key="eye" className="text-gray-700" size={18} />} />
+                  <Button onClick={() => openEditModal(product)} icon={<Pencil key="pencil" className="text-gray-700" size={18} />}/>
+                  <Popconfirm
+                      title="Delete this product ?"
+                      description="This action cannot be undone"
+                      onConfirm={() => deleteProduct(product._id)}
+                    >
+
+                    <Button danger icon={<Trash key="trash" className="text-red-700" size={18} />} />
+                    
+                  </Popconfirm>
+                
                 </div>
               </Card>
             </Col>
@@ -151,16 +237,24 @@ const AllProducts = () => {
         </Row>
       </Card>
       <Modal
-        title="Add a Product"
+        title={ isEdit ? "Edit Product" : "Add Product"}
         closable={{ "aria-label": "Custom Close Button" }}
         open={isOpen}
         centered
         onOk={() => setIsOpen(false)}
-        onCancel={() => setIsOpen(false)}
+        onCancel={() => {
+               setIsOpen(false)
+               setIsEdit(false)
+               setEditingProduct(null)
+               setFileList([])
+               form.resetFields()
+          }
+
+        }
         width={1000}
         footer={null}
       >
-        <Form layout="vertical" size="large" name="product" onFinish={onFinish}>
+        <Form form={form} layout="vertical" size="large" name="product" onFinish={onFinish}>
           <Row gutter={16}>
             <Col span={12}>
               <Form.Item
@@ -177,7 +271,7 @@ const AllProducts = () => {
               </Form.Item>
 
               <Form.Item label="Product Images" name="image">
-                <Upload {...uploadProps}>
+                <Upload {...uploadProps} fileList={fileList}>
                   {
                     fileList.length < 8 && (
                       <div>
@@ -226,12 +320,65 @@ const AllProducts = () => {
           <Divider />
           <div className="flex justify-end">
 
-            <Button type="primary" htmlType="submit">
-                  Create Product
+            <Button loading={loading} disabled={loading} type="primary" htmlType="submit">
+                 { isEdit ? "Update Product" : "Create Product" }
             </Button>
           </div>
         </Form>
       </Modal>
+
+      <Drawer
+        title="Product Details"
+        open={!!viewProduct}
+        onClose={() => setViewProduct(null)}
+        size="large"
+      >
+        {
+          viewProduct && (
+            <>
+                <Row gutter={16}>
+                  <Col span={12}>
+                    <img 
+                      src={`${import.meta.env.VITE_BASE_URL}${viewProduct.image[0]}`}
+                      alt={viewProduct.name}
+                      className="w-full object-cover h-64 rounded-lg"
+                    />
+                  </Col>
+
+                  <Col span={12}>
+                    <h2 className="text-xl font-semibold mb-2">{viewProduct.name}</h2>
+                    <p className="text-gray-600 mb-2">{viewProduct.description}</p>
+                    <p className="font-semibold mb-2">Price : ${viewProduct.price}</p>
+                    <p className="mb-2">
+                      Category : {viewProduct.category.name}
+                    </p>
+                    <p>Stock : {viewProduct.stock}</p>
+                    <p>Status : {viewProduct.isActive ? "Active" : "Inactive"}</p>
+                  </Col>
+                </Row>
+
+                <Divider />
+            
+                <Row gutter={16}>
+                  {
+                    viewProduct.image.map((img , index) => (
+                      <Col span={6} key={index} className="my-2">
+                      
+                        <img 
+                          src={`${import.meta.env.VITE_BASE_URL}${img}`} 
+                          alt={`photo-${index}`} 
+                          className="w-full h-32 rounded-md object-cover"
+                          />
+                      
+                      </Col>
+                    ))
+                  }
+                </Row>
+            
+            </>
+          )
+        }
+      </Drawer>
     </>
   );
 };
