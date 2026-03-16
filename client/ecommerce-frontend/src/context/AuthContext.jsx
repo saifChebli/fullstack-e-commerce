@@ -1,8 +1,8 @@
 'use client'
 
 import api from "@/lib/axios";
-import { createContext , useContext , useState , useEffect } from "react";
-
+import { createContext , useContext , useState , useEffect , useRef} from "react";
+import { useSession } from "next-auth/react";
 
 const AuthContext = createContext()
 
@@ -14,7 +14,13 @@ export const AuthProvider = ({children}) => {
 
     const [user , setUser] = useState(null)
     const [loading , setLoading] = useState(true)
+     
+    const { data : session , status} = useSession()
 
+
+
+    // Prevent Google from firing more than one per session
+    const googleAuthDone = useRef(false)
 
     const getMe = async () => {
         try {
@@ -30,6 +36,21 @@ export const AuthProvider = ({children}) => {
     useEffect(() => {
         getMe()
     },[])
+
+
+
+    useEffect(() => {
+       if(!loading && status === "authenticated" && session?.backendUser && !user && !googleAuthDone.current){
+           googleAuthDone.current = true
+           api.post("/auth/google" , {name : session.user.name , email : session.user.email})
+           .then((res) => {
+            setUser(res.data.user)
+           })
+           .catch(() => {
+             setUser(session.backendUser)
+           })
+       }
+    },[session , status , user , loading])
 
 
     const login = async (values) => {

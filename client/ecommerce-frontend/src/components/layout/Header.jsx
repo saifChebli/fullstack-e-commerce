@@ -4,6 +4,7 @@
 import { useCart } from "@/context/CartContext";
 import { ShoppingCart } from "lucide-react";
 import Link from "next/link";
+import LocaleSwitcher from "./LocaleSwitcher";
 
 
 export default function Header(){
@@ -15,16 +16,20 @@ export default function Header(){
             <Link href='/' className="text-xl font-bold">
                 MongoTango
             </Link>
-            <button onClick={openCart} className="relative">
-                <ShoppingCart />
-                {
-                    cart.length > 0 && (
-                        <span className="absolute -top-2 -right-2 bg-white text-black text-xs px-2 py-0.5 rounded-full ">
-                            {cart.length}
-                        </span>
-                    )
-                }
-            </button>
+            <div className="flex space-x-4">
+
+                    <LocaleSwitcher />
+                    <button onClick={openCart} className="relative">
+                        <ShoppingCart />
+                        {
+                            cart.length > 0 && (
+                                <span className="absolute -top-2 -right-2 bg-white text-black text-xs px-2 py-0.5 rounded-full ">
+                                    {cart.length}
+                                </span>
+                            )
+                        }
+                    </button>
+                </div>
         </header>
     )
 }

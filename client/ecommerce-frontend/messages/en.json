@@ -1,0 +1,28 @@
+{
+    "nav" : {
+       "home" : "Home",
+       "products" : "Products",
+       "cart" : "Cart",
+       "login" : "Login",
+       "logout" : "Logout",
+       "profile" : "Profile"
+    },
+    "auth": {
+        "welcome" : "Welcome Back",
+        "login" : "Login",
+        "continue_google":"Continue with Google"
+    },
+    "products" : {
+        "title" : "All Products"
+    },
+    "checkout" : {
+        "title" :"Shipping Details",
+        "name" :"Name",
+        "email" :"Email",
+        "phone" :"Phone",
+        "city" :"City",
+        "address" :"Address",
+        "proceed" :"Continue to Payment"
+   
+    }
+}

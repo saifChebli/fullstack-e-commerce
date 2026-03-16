@@ -1,6 +1,7 @@
 import User from "../models/User.js";
 import { generateToken, generateEmailToken } from "../utils/generateToken.js";
 import sendEmail from "../utils/sendEmail.js";
+import crypto from 'crypto'
 
 export const signUp = async (req, res) => {
   try {
@@ -11,7 +12,7 @@ export const signUp = async (req, res) => {
     if (exisitingUser)
       return res.status(400).json({ message: "User already Exisit" });
     // const hashedPassword = await bcrypt.hash(password , 10)
-    const emailToken = generateEmailToken({email});
+    const emailToken = generateEmailToken({ email });
     const newUser = await User.create({
       name,
       email,
@@ -61,20 +62,21 @@ export const login = async (req, res) => {
       return res.status(400).json({ message: "Invalid credentials" });
 
     // Set cookie
-    let jwtToken = generateToken({id: exisitingUser._id, role: exisitingUser.role})
+    let jwtToken = generateToken({
+      id: exisitingUser._id,
+      role: exisitingUser.role,
+    });
 
-    res.cookie("token" , jwtToken , {
-      httpOnly : true, // Prevent XSS Attacks / Cookie cannot be accessed by javascript
-      secure : process.env.NODE_ENV === "production",  // secure : true => Cookie sent only over HTTPS / process.env.NODE_ENV === "production"
-      sameSite : "strict",
-      maxAge : 7 * 24 * 60 * 60 * 1000 // 7 days 
-    })
-
-
+    res.cookie("token", jwtToken, {
+      httpOnly: true, // Prevent XSS Attacks / Cookie cannot be accessed by javascript
+      secure: process.env.NODE_ENV === "production", // secure : true => Cookie sent only over HTTPS / process.env.NODE_ENV === "production"
+      sameSite: "strict",
+      maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+    });
 
     res.status(200).json({
       message: "Logged in successfully",
-      success : true ,
+      success: true,
       user: {
         id: exisitingUser._id,
         name: exisitingUser.name,
@@ -92,22 +94,20 @@ export const login = async (req, res) => {
   }
 };
 
-
-export const logout = async (req,res) => {
+export const logout = async (req, res) => {
   try {
-    res.clearCookie("token" , {
-      httpOnly : true,
-      secure : process.env.NODE_ENV === "production",
-      sameSite : "strict"
-    })
+    res.clearCookie("token", {
+      httpOnly: true,
+      secure: process.env.NODE_ENV === "production",
+      sameSite: "strict",
+    });
 
-    res.status(200).json({message :"Logged out successfully"})
+    res.status(200).json({ message: "Logged out successfully" });
   } catch (error) {
     console.log(error);
     res.status(500).json({ message: "Internal server error" });
   }
-}
-
+};
 
 export const verifyEmailToken = async (req, res) => {
   const { emailToken } = req.params;
@@ -131,27 +131,41 @@ export const verifyEmailToken = async (req, res) => {
   }
 };
 
+export const googleAuth = async (req, res) => {
+  const { email, name } = req.body;
 
-export const googleAuth = async (req,res) => {
-  const {email , name} = req.body
+  if (!email || !name) {
+    return res.status(400).json({ message: "Email and name are required!" });
+  }
 
-  let user = await User.findOne({email})
+  let user = await User.findOne({ email });
 
-  if(!user){
+  if (!user) {
+    const generatedPassword = crypto.randomBytes(32).toString("hex");
     user = await User.create({
       email,
       name,
-      isVerified : true,
-      password : "google-auth"
-    })
+      isVerified: true,
+      password: generatedPassword,
+    });
   }
 
-  const token = generateToken({id : user._id})
+  const token = generateToken({ id: user._id, role: user.role });
 
-  res.cookie('token' , token , {
-    httpOnly : true,
-    sameSite : 'strict'
-  })
-
-  res.json({user})
-}
+  res.cookie("token", token, {
+    httpOnly: true, // Prevent XSS Attacks / Cookie cannot be accessed by javascript
+    secure: process.env.NODE_ENV === "production", // secure : true => Cookie sent only over HTTPS / process.env.NODE_ENV === "production"
+    sameSite: "strict",
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 7 days
+  });
+  console.log(token)
+  res.json({
+     user: {
+        id : user._id,
+        name : user.name,
+        email : user.email,
+        role : user.role
+     } ,
+     token
+  });
+};
